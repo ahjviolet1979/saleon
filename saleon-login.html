@@ -614,6 +614,27 @@
       font-size: 13px;
     }
 
+    .password-cell {
+      display: grid;
+      grid-template-columns: minmax(110px, 1fr) auto;
+      gap: 6px;
+      align-items: center;
+      min-width: 210px;
+    }
+
+    .mini-button {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface-soft);
+      color: #26332b;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 0 9px;
+      white-space: nowrap;
+    }
+
     .grid-input:focus,
     .grid-select:focus {
       border-color: var(--primary);
@@ -987,6 +1008,7 @@
         status: "사용중",
         email: "",
         phone: "",
+        tempPassword: "",
         lastLogin: "2026-07-23"
       },
       {
@@ -997,6 +1019,7 @@
         status: "사용중",
         email: "",
         phone: "",
+        tempPassword: "",
         lastLogin: "-"
       }
     ];
@@ -1211,6 +1234,7 @@
                   <th>상태</th>
                   <th>이메일</th>
                   <th>전화번호</th>
+                  <th>임시 비밀번호</th>
                   <th>최근 로그인</th>
                 </tr>
               </thead>
@@ -1254,6 +1278,12 @@
           <td>
             <input class="grid-input" data-field="phone" value="${escapeHtml(row.phone)}" />
           </td>
+          <td>
+            <div class="password-cell">
+              <input class="grid-input" data-field="tempPassword" type="text" value="${escapeHtml(row.tempPassword)}" placeholder="신규/초기화" />
+              <button class="mini-button password-reset-button" type="button" data-action="reset-password">초기화</button>
+            </div>
+          </td>
           <td>${escapeHtml(row.lastLogin)}</td>
         </tr>
       `;
@@ -1275,6 +1305,7 @@
           status: "사용중",
           email: "",
           phone: "",
+          tempPassword: "",
           lastLogin: "-"
         });
         selectedUserRowIds.add(nextId);
@@ -1305,6 +1336,18 @@
 
       contentArea.querySelectorAll("[data-user-row-id] input, [data-user-row-id] select").forEach((field) => {
         field.addEventListener("change", syncUserRowsFromGrid);
+      });
+
+      contentArea.querySelectorAll("[data-action='reset-password']").forEach((button) => {
+        button.addEventListener("click", () => {
+          const rowEl = button.closest("[data-user-row-id]");
+          const rowId = Number(rowEl.dataset.userRowId);
+          const passwordInput = rowEl.querySelector("[data-field='tempPassword']");
+          const row = userRows.find((item) => item.id === rowId);
+          passwordInput.value = "1111";
+          if (row) row.tempPassword = "1111";
+          message.textContent = "임시 비밀번호를 1111로 초기화했습니다. 저장 버튼을 눌러 반영하세요.";
+        });
       });
     }
 
