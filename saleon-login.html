@@ -681,18 +681,92 @@
       font-weight: 700;
     }
 
-    .permission-toolbar {
-      display: grid;
-      grid-template-columns: 240px auto;
-      gap: 10px;
-      align-items: end;
-      margin-bottom: 14px;
-    }
-
     .permission-check {
       width: 17px;
       height: 17px;
       accent-color: var(--primary);
+    }
+
+    .permission-layout {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .compact-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .compact-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 42px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      background: #f7faf8;
+    }
+
+    .compact-panel-head h4 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .compact-search {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .compact-search input {
+      height: 34px;
+      font-size: 13px;
+    }
+
+    .compact-search button {
+      height: 34px;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+
+    .user-list-table table,
+    .permission-table table {
+      min-width: 0;
+    }
+
+    .user-list-table th,
+    .user-list-table td,
+    .permission-table th,
+    .permission-table td {
+      height: 34px;
+      padding: 7px 9px;
+      font-size: 13px;
+    }
+
+    .user-select-row {
+      cursor: pointer;
+    }
+
+    .user-select-row:hover,
+    .user-select-row.is-selected {
+      background: #e7f1eb;
+    }
+
+    .selected-user-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
     }
 
     .settings-form {
@@ -815,6 +889,10 @@
       }
 
       .filter-row {
+        grid-template-columns: 1fr;
+      }
+
+      .permission-layout {
         grid-template-columns: 1fr;
       }
     }
@@ -1054,6 +1132,7 @@
     let currentAccount = null;
     let activeMenu = "DASHBOARD";
     let selectedPermissionLoginId = "user";
+    let userPermissionSearchText = "";
     let userRows = [
       {
         id: 1,
@@ -1395,8 +1474,14 @@
 
     function userMenuManageTemplate() {
       const users = userRows.filter((row) => row.loginId);
-      const target = accounts[selectedPermissionLoginId] ? selectedPermissionLoginId : users[0]?.loginId;
+      const searchedUsers = users.filter((row) => {
+        const keyword = userPermissionSearchText.trim().toLowerCase();
+        if (!keyword) return true;
+        return [row.loginId, row.userName, row.status].some((value) => String(value).toLowerCase().includes(keyword));
+      });
+      const target = users.some((row) => row.loginId === selectedPermissionLoginId) ? selectedPermissionLoginId : users[0]?.loginId;
       selectedPermissionLoginId = target || "user";
+      const selectedUser = users.find((row) => row.loginId === selectedPermissionLoginId);
       const targetAccount = accounts[selectedPermissionLoginId] || { menus: [] };
       const rows = getManageableMenus().filter((row) => row.useYn !== "N");
 
@@ -1408,32 +1493,72 @@
               <button class="secondary-button" id="saveUserMenusButton" type="button">저장</button>
             </div>
           </div>
-          <div class="permission-toolbar">
-            <div>
-              <label for="permissionUserSelect">사용자 ID</label>
-              <select id="permissionUserSelect">
-                ${users.map((row) => `<option value="${escapeHtml(row.loginId)}" ${row.loginId === selectedPermissionLoginId ? "selected" : ""}>${escapeHtml(row.loginId)} / ${escapeHtml(row.userName)} / ${escapeHtml(row.status)}</option>`).join("")}
-              </select>
-            </div>
-          </div>
-          <p class="grid-message" id="userMenuMessage">선택한 사용자 ID에 허용할 메뉴를 체크하고 저장하세요. 권한코드가 아니라 사용자 계정별 설정입니다.</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>허용</th>
-                  <th>상위메뉴</th>
-                  <th>메뉴명</th>
-                  <th>메뉴코드</th>
-                  <th>설명</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows.map((row) => userMenuPermissionRowTemplate(row, targetAccount.menus.includes(row.code))).join("")}
-              </tbody>
-            </table>
+          <div class="permission-layout">
+            <section class="compact-panel">
+              <div class="compact-panel-head">
+                <h4>사용자 목록</h4>
+                <span class="badge">${searchedUsers.length}명</span>
+              </div>
+              <div class="compact-search">
+                <input id="userPermissionSearch" type="text" value="${escapeHtml(userPermissionSearchText)}" placeholder="아이디/이름/상태 검색" />
+                <button class="secondary-button" id="userPermissionSearchButton" type="button">조회</button>
+              </div>
+              <div class="table-wrap user-list-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>아이디</th>
+                      <th>이름</th>
+                      <th>상태</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${searchedUsers.map(userPermissionRowTemplate).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="compact-panel">
+              <div class="compact-panel-head">
+                <h4>메뉴 권한</h4>
+                <div class="selected-user-summary">
+                  <span>선택:</span>
+                  <span>${escapeHtml(selectedUser?.loginId || "-")}</span>
+                  <span>${escapeHtml(selectedUser?.userName || "")}</span>
+                  <span>${escapeHtml(selectedUser?.status || "")}</span>
+                </div>
+              </div>
+              <p class="grid-message" id="userMenuMessage">사용자 ID별로 허용할 메뉴를 체크하고 저장하세요.</p>
+              <div class="table-wrap permission-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>허용</th>
+                      <th>상위메뉴</th>
+                      <th>메뉴명</th>
+                      <th>메뉴코드</th>
+                      <th>설명</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows.map((row) => userMenuPermissionRowTemplate(row, targetAccount.menus.includes(row.code))).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </section>
+      `;
+    }
+
+    function userPermissionRowTemplate(row) {
+      return `
+        <tr class="user-select-row ${row.loginId === selectedPermissionLoginId ? "is-selected" : ""}" data-user-login-id="${escapeHtml(row.loginId)}">
+          <td>${escapeHtml(row.loginId)}</td>
+          <td>${escapeHtml(row.userName)}</td>
+          <td>${escapeHtml(row.status)}</td>
+        </tr>
       `;
     }
 
@@ -1450,13 +1575,29 @@
     }
 
     function bindUserMenuManage() {
-      const userSelect = document.querySelector("#permissionUserSelect");
+      const searchInput = document.querySelector("#userPermissionSearch");
+      const searchButton = document.querySelector("#userPermissionSearchButton");
       const saveButton = document.querySelector("#saveUserMenusButton");
       const message = document.querySelector("#userMenuMessage");
 
-      userSelect.addEventListener("change", () => {
-        selectedPermissionLoginId = userSelect.value;
+      const applySearch = () => {
+        userPermissionSearchText = searchInput.value;
         renderContent();
+      };
+
+      searchButton.addEventListener("click", applySearch);
+      searchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          applySearch();
+        }
+      });
+
+      contentArea.querySelectorAll("[data-user-login-id]").forEach((row) => {
+        row.addEventListener("click", () => {
+          selectedPermissionLoginId = row.dataset.userLoginId;
+          renderContent();
+        });
       });
 
       saveButton.addEventListener("click", () => {
