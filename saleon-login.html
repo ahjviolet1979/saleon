@@ -385,39 +385,79 @@
     }
 
     .menu-section {
-      margin-bottom: 14px;
+      margin-bottom: 6px;
     }
 
     .menu-parent {
-      margin: 0 0 6px;
-      padding: 0 10px;
-      color: var(--muted);
-      font-size: 12px;
+      width: 100%;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0;
+      border: 0;
+      border-radius: var(--radius);
+      background: transparent;
+      color: #334139;
+      cursor: pointer;
+      padding: 7px 8px;
+      text-align: left;
+      font-size: 13px;
       font-weight: 800;
+    }
+
+    .menu-parent:hover {
+      background: #eef5f1;
+    }
+
+    .menu-parent-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tree-arrow {
+      width: 18px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .tree-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--primary);
+      opacity: 0.7;
     }
 
     .menu-list {
       display: grid;
-      gap: 4px;
-      margin: 0;
-      padding: 0;
+      gap: 2px;
+      margin: 0 0 4px;
+      padding: 0 0 0 17px;
       list-style: none;
+      border-left: 1px solid var(--line);
+      margin-left: 15px;
     }
 
     .menu-button {
       width: 100%;
-      min-height: 42px;
+      min-height: 32px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 7px;
       border: 0;
       border-radius: var(--radius);
       background: transparent;
       color: #26332b;
       cursor: pointer;
-      padding: 10px;
+      padding: 6px 8px;
       text-align: left;
       font-weight: 700;
+      font-size: 13px;
+      line-height: 1.25;
     }
 
     .menu-button:hover,
@@ -427,15 +467,15 @@
     }
 
     .menu-icon {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       display: grid;
       place-items: center;
       border-radius: 6px;
       background: rgba(31, 115, 85, 0.1);
       color: var(--primary);
-      font-size: 13px;
-      flex: 0 0 24px;
+      font-size: 11px;
+      flex: 0 0 20px;
     }
 
     .app-main {
@@ -539,6 +579,60 @@
     .filter-row select {
       height: 40px;
       font-size: 14px;
+    }
+
+    .grid-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .danger-button {
+      height: 38px;
+      border: 1px solid #e4c4be;
+      border-radius: var(--radius);
+      background: #fff3f1;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 0 13px;
+    }
+
+    .grid-input,
+    .grid-select {
+      width: 100%;
+      min-width: 120px;
+      height: 34px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      padding: 0 8px;
+      font-size: 13px;
+    }
+
+    .grid-input:focus,
+    .grid-select:focus {
+      border-color: var(--primary);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(31, 115, 85, 0.1);
+    }
+
+    .row-check {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary);
+    }
+
+    .grid-message {
+      min-height: 20px;
+      margin: 0 0 10px;
+      color: var(--primary-dark);
+      font-size: 13px;
+      font-weight: 700;
     }
 
     .table-wrap {
@@ -884,6 +978,30 @@
 
     let currentAccount = null;
     let activeMenu = "DASHBOARD";
+    let userRows = [
+      {
+        id: 1,
+        loginId: "administrator",
+        userName: "관리자",
+        role: "ADMIN",
+        status: "사용중",
+        email: "",
+        phone: "",
+        lastLogin: "2026-07-23"
+      },
+      {
+        id: 2,
+        loginId: "user",
+        userName: "사용자",
+        role: "USER",
+        status: "사용중",
+        email: "",
+        phone: "",
+        lastLogin: "-"
+      }
+    ];
+    let selectedUserRowIds = new Set();
+    let openMenuGroups = new Set(["홈", "시스템관리", "사업장", "기초관리", "거래관리", "현황/출력"]);
 
     const loginPage = document.querySelector("#loginPage");
     const appShell = document.querySelector("#appShell");
@@ -956,13 +1074,36 @@
       menuGroups.forEach((group) => {
         const permittedItems = group.items.filter((item) => currentAccount.menus.includes(item.code));
         if (!permittedItems.length) return;
+        const isOpen = openMenuGroups.has(group.title);
 
         const section = document.createElement("section");
         section.className = "menu-section";
-        section.innerHTML = `<p class="menu-parent">${group.title}</p>`;
+
+        const parentButton = document.createElement("button");
+        parentButton.type = "button";
+        parentButton.className = "menu-parent";
+        parentButton.innerHTML = `
+          <span class="menu-parent-label">
+            <span class="tree-arrow">${isOpen ? "▼" : "▶"}</span>
+            <span class="tree-dot"></span>
+            <span>${group.title}</span>
+          </span>
+        `;
+        parentButton.addEventListener("click", () => {
+          if (openMenuGroups.has(group.title)) {
+            openMenuGroups.delete(group.title);
+          } else {
+            openMenuGroups.add(group.title);
+          }
+          renderMenu();
+        });
+        section.appendChild(parentButton);
 
         const list = document.createElement("ul");
         list.className = "menu-list";
+        if (!isOpen) {
+          list.classList.add("hidden");
+        }
 
         permittedItems.forEach((item) => {
           const row = document.createElement("li");
@@ -997,6 +1138,7 @@
         contentArea.innerHTML = dashboardTemplate();
       } else if (activeMenu === "USER_MANAGE") {
         contentArea.innerHTML = userManageTemplate();
+        bindUserGrid();
       } else if (activeMenu === "COMMON_CODE") {
         contentArea.innerHTML = commonCodeTemplate();
       } else {
@@ -1042,7 +1184,11 @@
         <section class="content-panel">
           <div class="panel-head">
             <h3>사용자관리</h3>
-            <button class="secondary-button" type="button">사용자 등록</button>
+            <div class="grid-actions">
+              <button class="secondary-button" id="addUserRowButton" type="button">추가</button>
+              <button class="secondary-button" id="saveUserRowsButton" type="button">저장</button>
+              <button class="danger-button" id="deleteUserRowsButton" type="button">삭제</button>
+            </div>
           </div>
           <div class="filter-row">
             <input type="text" placeholder="아이디 또는 사용자명 검색" />
@@ -1053,40 +1199,140 @@
             </select>
             <button class="secondary-button" type="button">조회</button>
           </div>
+          <p class="grid-message" id="userGridMessage">그리드에서 바로 입력하고 저장할 수 있습니다.</p>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th>선택</th>
                   <th>아이디</th>
                   <th>사용자명</th>
                   <th>권한</th>
                   <th>상태</th>
-                  <th>메뉴권한</th>
+                  <th>이메일</th>
+                  <th>전화번호</th>
                   <th>최근 로그인</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>administrator</td>
-                  <td>관리자</td>
-                  <td><span class="badge">ADMIN</span></td>
-                  <td>사용중</td>
-                  <td>전체</td>
-                  <td>2026-07-23</td>
-                </tr>
-                <tr>
-                  <td>user</td>
-                  <td>사용자</td>
-                  <td><span class="badge">USER</span></td>
-                  <td>사용중</td>
-                  <td>업무 메뉴</td>
-                  <td>-</td>
-                </tr>
+                ${userRows.map(userRowTemplate).join("")}
               </tbody>
             </table>
           </div>
         </section>
       `;
+    }
+
+    function userRowTemplate(row) {
+      return `
+        <tr data-user-row-id="${row.id}">
+          <td>
+            <input class="row-check" type="checkbox" data-field="selected" ${selectedUserRowIds.has(row.id) ? "checked" : ""} />
+          </td>
+          <td>
+            <input class="grid-input" data-field="loginId" value="${escapeHtml(row.loginId)}" ${row.loginId === "administrator" ? "readonly" : ""} />
+          </td>
+          <td>
+            <input class="grid-input" data-field="userName" value="${escapeHtml(row.userName)}" />
+          </td>
+          <td>
+            <select class="grid-select" data-field="role">
+              <option value="ADMIN" ${row.role === "ADMIN" ? "selected" : ""}>ADMIN</option>
+              <option value="USER" ${row.role === "USER" ? "selected" : ""}>USER</option>
+            </select>
+          </td>
+          <td>
+            <select class="grid-select" data-field="status">
+              <option value="사용중" ${row.status === "사용중" ? "selected" : ""}>사용중</option>
+              <option value="일시정지" ${row.status === "일시정지" ? "selected" : ""}>일시정지</option>
+              <option value="해지" ${row.status === "해지" ? "selected" : ""}>해지</option>
+            </select>
+          </td>
+          <td>
+            <input class="grid-input" data-field="email" value="${escapeHtml(row.email)}" />
+          </td>
+          <td>
+            <input class="grid-input" data-field="phone" value="${escapeHtml(row.phone)}" />
+          </td>
+          <td>${escapeHtml(row.lastLogin)}</td>
+        </tr>
+      `;
+    }
+
+    function bindUserGrid() {
+      const addButton = document.querySelector("#addUserRowButton");
+      const saveButton = document.querySelector("#saveUserRowsButton");
+      const deleteButton = document.querySelector("#deleteUserRowsButton");
+      const message = document.querySelector("#userGridMessage");
+
+      addButton.addEventListener("click", () => {
+        const nextId = Math.max(...userRows.map((row) => row.id), 0) + 1;
+        userRows.unshift({
+          id: nextId,
+          loginId: "",
+          userName: "",
+          role: "USER",
+          status: "사용중",
+          email: "",
+          phone: "",
+          lastLogin: "-"
+        });
+        selectedUserRowIds.add(nextId);
+        renderContent();
+      });
+
+      saveButton.addEventListener("click", () => {
+        syncUserRowsFromGrid();
+        message.textContent = "변경 내용을 저장했습니다. 실제 DB 저장은 API 연결 단계에서 반영합니다.";
+      });
+
+      deleteButton.addEventListener("click", () => {
+        syncUserRowsFromGrid();
+        if (!selectedUserRowIds.size) {
+          message.textContent = "삭제할 사용자를 선택해주세요.";
+          return;
+        }
+
+        const hasAdministrator = userRows.some((row) => selectedUserRowIds.has(row.id) && row.loginId === "administrator");
+        userRows = userRows.filter((row) => row.loginId === "administrator" || !selectedUserRowIds.has(row.id));
+        selectedUserRowIds.clear();
+        renderContent();
+        const nextMessage = document.querySelector("#userGridMessage");
+        nextMessage.textContent = hasAdministrator
+          ? "administrator는 삭제하지 않았고, 선택된 다른 사용자만 삭제했습니다."
+          : "선택한 사용자를 삭제했습니다.";
+      });
+
+      contentArea.querySelectorAll("[data-user-row-id] input, [data-user-row-id] select").forEach((field) => {
+        field.addEventListener("change", syncUserRowsFromGrid);
+      });
+    }
+
+    function syncUserRowsFromGrid() {
+      contentArea.querySelectorAll("[data-user-row-id]").forEach((rowEl) => {
+        const rowId = Number(rowEl.dataset.userRowId);
+        const row = userRows.find((item) => item.id === rowId);
+        if (!row) return;
+
+        rowEl.querySelectorAll("[data-field]").forEach((field) => {
+          const fieldName = field.dataset.field;
+          if (fieldName === "selected") {
+            if (field.checked) selectedUserRowIds.add(rowId);
+            else selectedUserRowIds.delete(rowId);
+            return;
+          }
+          row[fieldName] = field.value;
+        });
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
     function commonCodeTemplate() {
