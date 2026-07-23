@@ -849,6 +849,116 @@
       font-size: 12px;
     }
 
+    .partner-layout {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.9fr) minmax(460px, 1.4fr);
+      gap: 10px;
+    }
+
+    .partner-list table {
+      min-width: 520px;
+    }
+
+    .partner-row {
+      cursor: pointer;
+    }
+
+    .partner-row:hover,
+    .partner-row.is-selected {
+      background: #e7f1eb;
+    }
+
+    .partner-form {
+      display: grid;
+      gap: 8px;
+    }
+
+    .partner-section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .partner-section-title {
+      margin: 0;
+      padding: 7px 9px;
+      border-bottom: 1px solid var(--line);
+      background: #f7faf8;
+      color: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .partner-section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px 9px;
+      padding: 9px;
+    }
+
+    .partner-section-grid.is-single {
+      grid-template-columns: 1fr;
+    }
+
+    .partner-field-wide {
+      grid-column: 1 / -1;
+    }
+
+    .partner-form label {
+      margin-bottom: 3px;
+      font-size: 12px;
+    }
+
+    .partner-form input,
+    .partner-form select,
+    .partner-form textarea {
+      width: 100%;
+      min-width: 0;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .partner-form input,
+    .partner-form select {
+      height: 30px;
+      padding: 0 8px;
+    }
+
+    .partner-form textarea {
+      min-height: 64px;
+      padding: 7px 8px;
+      resize: vertical;
+    }
+
+    .partner-code-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 7px;
+      align-items: end;
+    }
+
+    .partner-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 30px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .partner-check input {
+      width: 15px;
+      height: 15px;
+    }
+
+    .partner-amount-note {
+      grid-column: 1 / -1;
+      margin: -2px 0 0;
+      color: var(--danger);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
     .place-modal-backdrop {
       position: fixed;
       z-index: 60;
@@ -1061,6 +1171,10 @@
         grid-template-columns: 1fr;
       }
 
+      .partner-layout {
+        grid-template-columns: 1fr;
+      }
+
       .place-form {
         grid-template-columns: 1fr;
       }
@@ -1113,6 +1227,19 @@
       .panel-head .icon-only {
         width: 32px;
         height: 32px;
+      }
+
+      .partner-section-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .partner-field-wide,
+      .partner-amount-note {
+        grid-column: auto;
+      }
+
+      .partner-code-row {
+        grid-template-columns: 1fr;
       }
 
       .app-main {
@@ -1313,7 +1440,16 @@
       { group: "USER_ROLE", code: "ADMIN", name: "관리자", useYn: "Y" },
       { group: "USER_ROLE", code: "USER", name: "사용자", useYn: "Y" },
       { group: "MONEY_IO_TYPE", code: "RECEIVE", name: "수금", useYn: "Y" },
-      { group: "MONEY_IO_TYPE", code: "PAY", name: "지급", useYn: "Y" }
+      { group: "MONEY_IO_TYPE", code: "PAY", name: "지급", useYn: "Y" },
+      { group: "PARTNER_TYPE", code: "SALES", name: "매출처", useYn: "Y" },
+      { group: "PARTNER_TYPE", code: "PURCHASE", name: "매입처", useYn: "Y" },
+      { group: "PARTNER_TYPE", code: "ETC", name: "기타", useYn: "Y" },
+      { group: "TAX_TYPE", code: "INCLUDE", name: "포함", useYn: "Y" },
+      { group: "TAX_TYPE", code: "SEPARATE", name: "별도", useYn: "Y" },
+      { group: "TAX_TYPE", code: "FREE", name: "면세", useYn: "Y" },
+      { group: "SHIP_GRADE", code: "A", name: "출고가.A", useYn: "Y" },
+      { group: "SHIP_GRADE", code: "B", name: "출고가.B", useYn: "Y" },
+      { group: "SHIP_GRADE", code: "C", name: "출고가.C", useYn: "Y" }
     ];
 
     function getCommonCodes(group) {
@@ -1353,7 +1489,10 @@
       }
     ];
     let businessPlaceRows = [];
+    let partnerRows = [];
     let placeModalOpen = false;
+    let selectedPartnerRowId = null;
+    let selectedBusinessPlaceCode = "";
     let selectedUserRowIds = new Set();
     let openMenuGroups = new Set(["홈", "시스템관리", "사업장", "기초관리", "거래관리", "현황/출력"]);
     let currentLoginId = "";
@@ -1434,6 +1573,11 @@
 
     sidebarBackdrop.addEventListener("click", closeSidebar);
 
+    businessSelect.addEventListener("change", () => {
+      selectedBusinessPlaceCode = businessSelect.value;
+      renderContent();
+    });
+
     function closeSidebar() {
       sidebar.classList.remove("is-open");
       sidebarBackdrop.classList.remove("is-open");
@@ -1452,6 +1596,7 @@
         if (Array.isArray(storedData.menuGroups)) menuGroups = storedData.menuGroups;
         if (Array.isArray(storedData.userRows)) userRows = storedData.userRows;
         if (Array.isArray(storedData.businessPlaceRows)) businessPlaceRows = storedData.businessPlaceRows;
+        if (Array.isArray(storedData.partnerRows)) partnerRows = storedData.partnerRows;
       } catch (error) {
         console.warn("SaleOn 저장 데이터를 읽지 못했습니다.", error);
       }
@@ -1463,6 +1608,7 @@
         menuGroups,
         userRows,
         businessPlaceRows,
+        partnerRows,
         savedAt: new Date().toISOString()
       }));
     }
@@ -1476,8 +1622,26 @@
       currentUserName.textContent = currentAccount.userName;
       currentUserRole.textContent = currentAccount.role;
       businessSelect.classList.toggle("hidden", currentAccount.role === "ADMIN");
+      renderBusinessSelect();
       renderMenu();
       renderContent();
+    }
+
+    function renderBusinessSelect() {
+      const rows = businessPlaceRows.filter((row) => row.ownerLoginId === currentLoginId && row.useYn !== "N");
+      const currentValue = selectedBusinessPlaceCode || businessSelect.value || "";
+      businessSelect.innerHTML = `
+        <option value="">전체 사업장</option>
+        ${rows.map((row) => `
+          <option value="${escapeHtml(row.placeCode)}" ${row.placeCode === currentValue ? "selected" : ""}>
+            ${escapeHtml(row.placeCode)} / ${escapeHtml(row.businessType || row.address || "사업장")}
+          </option>
+        `).join("")}
+      `;
+      if (!rows.some((row) => row.placeCode === currentValue)) {
+        selectedBusinessPlaceCode = "";
+        businessSelect.value = "";
+      }
     }
 
     function renderMenu() {
@@ -1570,6 +1734,9 @@
       } else if (activeMenu === "PLACE_MANAGE") {
         contentArea.innerHTML = placeManageTemplate();
         bindPlaceManage();
+      } else if (activeMenu === "PARTNER_MANAGE") {
+        contentArea.innerHTML = partnerManageTemplate();
+        bindPartnerManage();
       } else {
         contentArea.innerHTML = workTemplate(menu.name);
       }
@@ -2338,6 +2505,360 @@
       if (!local && !domain) return "";
       if (!local || !domain) return `${local}${domain}`;
       return `${local}@${domain}`;
+    }
+
+    function partnerManageTemplate() {
+      const places = businessPlaceRows.filter((row) => row.ownerLoginId === currentLoginId && row.useYn !== "N");
+      const rows = partnerRows.filter((row) => {
+        if (row.ownerLoginId !== currentLoginId) return false;
+        if (!selectedBusinessPlaceCode) return true;
+        return row.placeCode === selectedBusinessPlaceCode;
+      });
+      const selectedRow = rows.find((row) => row.id === selectedPartnerRowId) || null;
+      if (selectedPartnerRowId && !selectedRow) selectedPartnerRowId = null;
+      const formRow = selectedRow || createEmptyPartnerRow(places);
+
+      return `
+        <section class="content-panel">
+          <div class="panel-head">
+            <h3>거래처등록</h3>
+            <div class="grid-actions">
+              <button class="icon-only" id="newPartnerButton" type="button" title="신규" aria-label="신규">+</button>
+              <button class="icon-only" id="savePartnerButton" form="partnerForm" type="submit" title="저장" aria-label="저장">✓</button>
+              <button class="icon-only is-danger" id="deletePartnerButton" type="button" title="삭제" aria-label="삭제">×</button>
+            </div>
+          </div>
+          <p class="grid-message" id="partnerGridMessage">거래처는 현재 로그인 사용자와 선택한 사업장 기준으로 저장됩니다.</p>
+          <div class="partner-layout">
+            <section class="compact-panel">
+              <div class="compact-panel-head">
+                <h4>거래처 목록</h4>
+                <span class="badge">${rows.length}건</span>
+              </div>
+              <div class="table-wrap partner-list">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>거래처구분</th>
+                      <th>코드</th>
+                      <th>거래처명</th>
+                      <th>현잔액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows.length ? rows.map(partnerRowTemplate).join("") : `<tr><td colspan="4">등록된 거래처가 없습니다.</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section class="compact-panel">
+              <div class="compact-panel-head">
+                <h4>거래처 정보</h4>
+                <span class="badge">${selectedRow ? "수정" : "신규"}</span>
+              </div>
+              ${places.length ? partnerFormTemplate(formRow, places) : `<p class="grid-message">거래처를 등록하려면 먼저 사업장관리에 사업장을 추가해주세요.</p>`}
+            </section>
+          </div>
+        </section>
+      `;
+    }
+
+    function partnerRowTemplate(row) {
+      return `
+        <tr class="partner-row ${row.id === selectedPartnerRowId ? "is-selected" : ""}" data-partner-id="${row.id}">
+          <td>${escapeHtml(getCommonCodeName("PARTNER_TYPE", row.partnerType))}</td>
+          <td>${escapeHtml(row.partnerCode)}</td>
+          <td>${escapeHtml(row.partnerName)}</td>
+          <td>${formatAmount(row.currentBalance)}</td>
+        </tr>
+      `;
+    }
+
+    function partnerFormTemplate(row, places) {
+      const selectedPlaceCode = row.placeCode || getDefaultPlaceCode(places);
+      return `
+        <form class="partner-form" id="partnerForm" novalidate>
+          <input type="hidden" name="partnerId" value="${escapeHtml(row.id || "")}" />
+          <section class="partner-section">
+            <h5 class="partner-section-title">필수</h5>
+            <div class="partner-section-grid">
+              <div>
+                <label for="partner_placeCode">사업장</label>
+                <select id="partner_placeCode" name="placeCode">
+                  ${places.map((place) => `
+                    <option value="${escapeHtml(place.placeCode)}" ${place.placeCode === selectedPlaceCode ? "selected" : ""}>
+                      ${escapeHtml(place.placeCode)} / ${escapeHtml(place.businessType || place.address || "사업장")}
+                    </option>
+                  `).join("")}
+                </select>
+              </div>
+              <div class="partner-code-row">
+                <div>
+                  <label>코드</label>
+                  <div class="place-code-preview">${escapeHtml(row.partnerCode || createNextPartnerCode())}</div>
+                </div>
+                <label class="partner-check">
+                  <input name="useYn" type="checkbox" value="Y" ${row.useYn !== "N" ? "checked" : ""} />
+                  사용
+                </label>
+              </div>
+              ${partnerInputTemplate("partnerName", "거래처명", row.partnerName, true)}
+            </div>
+          </section>
+
+          <section class="partner-section">
+            <h5 class="partner-section-title">연결</h5>
+            <div class="partner-section-grid">
+              ${partnerInputTemplate("partnerCategory", "거래처분류", row.partnerCategory)}
+              ${partnerInputTemplate("staffName", "담당사원", row.staffName)}
+              ${partnerInputTemplate("paymentBook", "주 결제장부", row.paymentBook, true)}
+            </div>
+          </section>
+
+          <section class="partner-section">
+            <h5 class="partner-section-title">부가</h5>
+            <div class="partner-section-grid">
+              ${partnerInputTemplate("initialBalance", "기초잔액", row.initialBalance, false, "text", "0")}
+              ${partnerInputTemplate("currentBalance", "현잔액", row.currentBalance, false, "text", "0")}
+              <p class="partner-amount-note">빨간 금액은 받고, 지급할 금액은 마이너스로 입력하세요.</p>
+              ${partnerInputTemplate("properBalance", "적정잔액", row.properBalance, false, "text", "0")}
+              ${partnerSelectTemplate("partnerType", "거래처구분", "PARTNER_TYPE", row.partnerType || "SALES")}
+              ${partnerSelectTemplate("taxType", "과세구분", "TAX_TYPE", row.taxType || "INCLUDE")}
+              ${partnerSelectTemplate("shipGrade", "출고등급", "SHIP_GRADE", row.shipGrade || "A")}
+              ${partnerInputTemplate("startDate", "거래시작일", row.startDate || new Date().toISOString().slice(0, 10), false, "date")}
+              <div class="partner-field-wide">
+                <label for="partner_memo">메모</label>
+                <textarea id="partner_memo" name="memo">${escapeHtml(row.memo)}</textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="partner-section">
+            <h5 class="partner-section-title">사업자</h5>
+            <div class="partner-section-grid">
+              ${partnerInputTemplate("businessNumber", "등록번호", row.businessNumber, false, "text", "000-00-00000")}
+              ${partnerInputTemplate("branchNumber", "종사업장번호", row.branchNumber)}
+              ${partnerInputTemplate("companyName", "상호", row.companyName)}
+              ${partnerInputTemplate("ceoName", "대표자명", row.ceoName)}
+              ${partnerInputTemplate("businessAddress", "사업장소재지", row.businessAddress, true)}
+              ${partnerInputTemplate("businessType", "업태", row.businessType)}
+              ${partnerInputTemplate("businessItem", "종목", row.businessItem)}
+            </div>
+          </section>
+
+          <section class="partner-section">
+            <h5 class="partner-section-title">담당자</h5>
+            <div class="partner-section-grid">
+              ${partnerInputTemplate("manager1", "담당1", row.manager1)}
+              ${partnerInputTemplate("mobile1", "휴대폰1", row.mobile1, false, "text", "010-0000-0000")}
+              ${partnerEmailTemplate("email1", "이메일1", row.email1)}
+              ${partnerInputTemplate("manager2", "담당2", row.manager2)}
+              ${partnerInputTemplate("mobile2", "휴대폰2", row.mobile2, false, "text", "010-0000-0000")}
+              ${partnerEmailTemplate("email2", "이메일2", row.email2)}
+            </div>
+          </section>
+
+          <section class="partner-section">
+            <h5 class="partner-section-title">연락처</h5>
+            <div class="partner-section-grid">
+              ${partnerInputTemplate("phone1", "전화1", row.phone1, false, "text", "02-0000-0000")}
+              ${partnerInputTemplate("phone2", "전화2", row.phone2, false, "text", "02-0000-0000")}
+              ${partnerInputTemplate("fax", "팩스", row.fax, false, "text", "02-0000-0000")}
+            </div>
+          </section>
+        </form>
+      `;
+    }
+
+    function partnerInputTemplate(name, label, value = "", wide = false, type = "text", placeholder = "") {
+      return `
+        <div class="${wide ? "partner-field-wide" : ""}">
+          <label for="partner_${name}">${label}</label>
+          <input id="partner_${name}" name="${name}" type="${type}" value="${escapeHtml(value)}" placeholder="${placeholder}" />
+        </div>
+      `;
+    }
+
+    function partnerSelectTemplate(name, label, group, value = "") {
+      return `
+        <div>
+          <label for="partner_${name}">${label}</label>
+          <select id="partner_${name}" name="${name}">
+            ${getCommonCodes(group).map((codeRow) => `
+              <option value="${escapeHtml(codeRow.code)}" ${codeRow.code === value ? "selected" : ""}>${escapeHtml(codeRow.name)}</option>
+            `).join("")}
+          </select>
+        </div>
+      `;
+    }
+
+    function partnerEmailTemplate(name, label, value = "") {
+      const parts = splitEmail(value);
+      return `
+        <div class="partner-field-wide">
+          <label>${label}</label>
+          <div class="email-pair" data-email-name="${name}">
+            <input name="${name}Local" type="text" value="${escapeHtml(parts.local)}" aria-label="${label} 아이디" />
+            <span class="email-at">@</span>
+            <input name="${name}Domain" type="text" value="${escapeHtml(parts.domain)}" aria-label="${label} 도메인" placeholder="example.com" />
+          </div>
+        </div>
+      `;
+    }
+
+    function bindPartnerManage() {
+      const form = document.querySelector("#partnerForm");
+      const message = document.querySelector("#partnerGridMessage");
+
+      document.querySelector("#newPartnerButton")?.addEventListener("click", () => {
+        selectedPartnerRowId = null;
+        renderContent();
+      });
+
+      document.querySelector("#deletePartnerButton")?.addEventListener("click", () => {
+        if (!selectedPartnerRowId) {
+          message.textContent = "삭제할 거래처를 왼쪽 목록에서 선택해주세요.";
+          message.style.color = "var(--danger)";
+          return;
+        }
+        partnerRows = partnerRows.filter((row) => row.id !== selectedPartnerRowId);
+        selectedPartnerRowId = null;
+        saveAppData();
+        renderContent();
+      });
+
+      contentArea.querySelectorAll("[data-partner-id]").forEach((row) => {
+        row.addEventListener("click", () => {
+          selectedPartnerRowId = Number(row.dataset.partnerId);
+          renderContent();
+        });
+      });
+
+      bindFormattedInput("#partner_businessNumber", formatBusinessNumber);
+      ["#partner_mobile1", "#partner_mobile2", "#partner_phone1", "#partner_phone2", "#partner_fax"].forEach((selector) => {
+        bindFormattedInput(selector, formatPhoneNumber);
+      });
+      ["#partner_initialBalance", "#partner_currentBalance", "#partner_properBalance"].forEach((selector) => {
+        bindFormattedInput(selector, formatNumericText);
+      });
+
+      form?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const partnerId = Number(formData.get("partnerId"));
+        const savedRow = buildPartnerRowFromForm(formData, partnerId);
+
+        if (!savedRow.partnerName) {
+          message.textContent = "거래처명은 필수입니다.";
+          message.style.color = "var(--danger)";
+          return;
+        }
+
+        if (partnerId) {
+          partnerRows = partnerRows.map((row) => row.id === partnerId ? savedRow : row);
+          selectedPartnerRowId = partnerId;
+        } else {
+          partnerRows.unshift(savedRow);
+          selectedPartnerRowId = savedRow.id;
+        }
+
+        saveAppData();
+        renderContent();
+        const nextMessage = document.querySelector("#partnerGridMessage");
+        nextMessage.textContent = "거래처 정보를 저장했습니다.";
+        nextMessage.style.color = "var(--primary-dark)";
+      });
+    }
+
+    function buildPartnerRowFromForm(formData, partnerId) {
+      const existing = partnerRows.find((row) => row.id === partnerId);
+      const id = partnerId || Math.max(...partnerRows.map((row) => row.id), 0) + 1;
+      return {
+        id,
+        ownerLoginId: currentLoginId,
+        placeCode: String(formData.get("placeCode") || "").trim(),
+        partnerCode: existing?.partnerCode || createNextPartnerCode(),
+        useYn: formData.get("useYn") === "Y" ? "Y" : "N",
+        partnerName: String(formData.get("partnerName") || "").trim(),
+        partnerCategory: String(formData.get("partnerCategory") || "").trim(),
+        staffName: String(formData.get("staffName") || "").trim(),
+        paymentBook: String(formData.get("paymentBook") || "").trim(),
+        initialBalance: unformatAmount(formData.get("initialBalance")),
+        currentBalance: unformatAmount(formData.get("currentBalance")),
+        properBalance: unformatAmount(formData.get("properBalance")),
+        partnerType: String(formData.get("partnerType") || "SALES"),
+        taxType: String(formData.get("taxType") || "INCLUDE"),
+        shipGrade: String(formData.get("shipGrade") || "A"),
+        startDate: String(formData.get("startDate") || ""),
+        memo: String(formData.get("memo") || "").trim(),
+        businessNumber: String(formData.get("businessNumber") || "").trim(),
+        branchNumber: String(formData.get("branchNumber") || "").trim(),
+        companyName: String(formData.get("companyName") || "").trim(),
+        ceoName: String(formData.get("ceoName") || "").trim(),
+        businessAddress: String(formData.get("businessAddress") || "").trim(),
+        businessType: String(formData.get("businessType") || "").trim(),
+        businessItem: String(formData.get("businessItem") || "").trim(),
+        manager1: String(formData.get("manager1") || "").trim(),
+        mobile1: String(formData.get("mobile1") || "").trim(),
+        email1: buildEmail(formData, "email1"),
+        manager2: String(formData.get("manager2") || "").trim(),
+        mobile2: String(formData.get("mobile2") || "").trim(),
+        email2: buildEmail(formData, "email2"),
+        phone1: String(formData.get("phone1") || "").trim(),
+        phone2: String(formData.get("phone2") || "").trim(),
+        fax: String(formData.get("fax") || "").trim()
+      };
+    }
+
+    function createEmptyPartnerRow(places) {
+      return {
+        id: "",
+        placeCode: getDefaultPlaceCode(places),
+        partnerCode: createNextPartnerCode(),
+        useYn: "Y",
+        partnerType: "SALES",
+        taxType: "INCLUDE",
+        shipGrade: "A",
+        startDate: new Date().toISOString().slice(0, 10)
+      };
+    }
+
+    function getDefaultPlaceCode(places) {
+      const selectedValue = selectedBusinessPlaceCode || businessSelect.value;
+      if (selectedValue && places.some((place) => place.placeCode === selectedValue)) return selectedValue;
+      return places[0]?.placeCode || "";
+    }
+
+    function createNextPartnerCode() {
+      const rows = partnerRows.filter((row) => row.ownerLoginId === currentLoginId);
+      const maxNumber = rows.reduce((max, row) => {
+        const match = String(row.partnerCode || "").match(/^(\d+)$/);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return String(maxNumber + 1).padStart(5, "0");
+    }
+
+    function splitEmail(value = "") {
+      const [local = "", ...domainParts] = String(value || "").split("@");
+      return { local, domain: domainParts.join("@") };
+    }
+
+    function formatNumericText(value) {
+      const text = String(value || "").replace(/[^\d-]/g, "");
+      const isNegative = text.startsWith("-");
+      const numbers = text.replace(/-/g, "");
+      if (!numbers) return isNegative ? "-" : "";
+      return `${isNegative ? "-" : ""}${Number(numbers).toLocaleString("ko-KR")}`;
+    }
+
+    function unformatAmount(value) {
+      const text = String(value || "").replace(/[^\d-]/g, "");
+      if (!text || text === "-") return 0;
+      return Number(text);
+    }
+
+    function formatAmount(value) {
+      return `${Number(value || 0).toLocaleString("ko-KR")}`;
     }
 
     function workTemplate(title) {
