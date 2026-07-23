@@ -1055,7 +1055,9 @@
   </div>
 
   <script>
-    const accounts = {
+    const storageKey = "saleon.demo.storage.v1";
+
+    let accounts = {
       administrator: {
         userName: "관리자",
         role: "ADMIN",
@@ -1081,7 +1083,7 @@
       }
     };
 
-    const menuGroups = [
+    let menuGroups = [
       {
         title: "홈",
         items: [
@@ -1159,6 +1161,9 @@
     ];
     let selectedUserRowIds = new Set();
     let openMenuGroups = new Set(["홈", "시스템관리", "사업장", "기초관리", "거래관리", "현황/출력"]);
+    let currentLoginId = "";
+
+    loadStoredData();
 
     const loginPage = document.querySelector("#loginPage");
     const appShell = document.querySelector("#appShell");
@@ -1190,13 +1195,17 @@
 
     loginForm.addEventListener("submit", (event) => {
       event.preventDefault();
-      const account = accounts[loginId.value.trim()];
+      const inputLoginId = loginId.value.trim();
+      const account = accounts[inputLoginId];
       const isValidPassword = account && password.value.trim() === account.password;
       loginError.classList.toggle("is-visible", !account || !isValidPassword);
 
       if (!account || !isValidPassword) return;
 
+      currentLoginId = inputLoginId;
       currentAccount = account;
+      updateLastLogin(inputLoginId);
+      saveAppData();
       activeMenu = "DASHBOARD";
       loginPage.classList.add("hidden");
       appShell.classList.remove("hidden");
@@ -1216,6 +1225,8 @@
     });
 
     logoutButton.addEventListener("click", () => {
+      currentLoginId = "";
+      currentAccount = null;
       appShell.classList.add("hidden");
       loginPage.classList.remove("hidden");
       closeSidebar();
@@ -1231,6 +1242,37 @@
     function closeSidebar() {
       sidebar.classList.remove("is-open");
       sidebarBackdrop.classList.remove("is-open");
+    }
+
+    function loadStoredData() {
+      try {
+        const storedValue = localStorage.getItem(storageKey);
+        if (!storedValue) {
+          saveAppData();
+          return;
+        }
+
+        const storedData = JSON.parse(storedValue);
+        if (storedData.accounts) accounts = storedData.accounts;
+        if (Array.isArray(storedData.menuGroups)) menuGroups = storedData.menuGroups;
+        if (Array.isArray(storedData.userRows)) userRows = storedData.userRows;
+      } catch (error) {
+        console.warn("SaleOn 저장 데이터를 읽지 못했습니다.", error);
+      }
+    }
+
+    function saveAppData() {
+      localStorage.setItem(storageKey, JSON.stringify({
+        accounts,
+        menuGroups,
+        userRows,
+        savedAt: new Date().toISOString()
+      }));
+    }
+
+    function updateLastLogin(inputLoginId) {
+      const row = userRows.find((item) => item.loginId === inputLoginId);
+      if (row) row.lastLogin = new Date().toISOString().slice(0, 10);
     }
 
     function renderApp() {
@@ -1467,8 +1509,9 @@
           item.desc = rowEl.querySelector("[data-field='desc']").value.trim();
           item.useYn = rowEl.querySelector("[data-field='useYn']").checked ? "Y" : "N";
         });
+        saveAppData();
         renderMenu();
-        message.textContent = "메뉴 정보를 저장했습니다. 실제 DB 연결 시 menus 테이블에 저장합니다.";
+        message.textContent = "메뉴 정보를 저장했습니다. 새로고침해도 유지됩니다.";
       });
     }
 
@@ -1609,12 +1652,14 @@
           accounts[selectedPermissionLoginId].menus = checkedMenus;
         }
 
+        saveAppData();
+
         if (currentAccount === accounts[selectedPermissionLoginId]) {
           renderApp();
           return;
         }
 
-          message.textContent = "사용자 ID별 메뉴권한을 저장했습니다. 실제 DB 연결 시 user_menu_permissions.user_id 기준으로 저장합니다.";
+          message.textContent = "사용자 ID별 메뉴권한을 저장했습니다. 새로고침해도 유지됩니다.";
       });
     }
 
@@ -1674,7 +1719,11 @@
         }
 
         currentAccount.password = nextPassword;
-        message.textContent = "비밀번호가 변경되었습니다. 실제 DB 연결 시 해시로 저장합니다.";
+        if (currentLoginId && accounts[currentLoginId]) accounts[currentLoginId].password = nextPassword;
+        const row = userRows.find((item) => item.loginId === currentLoginId);
+        if (row) row.tempPassword = "";
+        saveAppData();
+        message.textContent = "비밀번호가 변경되었습니다. 새로고침 후에도 변경된 비밀번호로 로그인됩니다.";
         message.style.color = "var(--primary-dark)";
         form.reset();
       });
@@ -1747,6 +1796,10 @@
 
       saveButton.addEventListener("click", () => {
         syncUserRowsFromGrid();
+        const activeLoginIds = new Set(userRows.filter((row) => row.loginId).map((row) => row.loginId));
+        Object.keys(accounts).forEach((accountLoginId) => {
+          if (!activeLoginIds.has(accountLoginId)) delete accounts[accountLoginId];
+        });
         userRows.forEach((row) => {
           if (!row.loginId) return;
           if (!accounts[row.loginId]) {
@@ -1762,7 +1815,8 @@
             if (row.tempPassword) accounts[row.loginId].password = row.tempPassword;
           }
         });
-        message.textContent = "변경 내용을 저장했습니다. 실제 DB 저장은 API 연결 단계에서 반영합니다.";
+        saveAppData();
+        message.textContent = "변경 내용을 저장했습니다. 새로고침해도 사용자 정보가 유지됩니다.";
       });
 
       deleteButton.addEventListener("click", () => {
@@ -1780,6 +1834,7 @@
           });
         userRows = userRows.filter((row) => row.loginId === "administrator" || !selectedUserRowIds.has(row.id));
         selectedUserRowIds.clear();
+        saveAppData();
         renderContent();
         const nextMessage = document.querySelector("#userGridMessage");
         nextMessage.textContent = hasAdministrator
