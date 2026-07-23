@@ -681,6 +681,20 @@
       font-weight: 700;
     }
 
+    .permission-toolbar {
+      display: grid;
+      grid-template-columns: 240px auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .permission-check {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--primary);
+    }
+
     .settings-form {
       max-width: 520px;
       display: grid;
@@ -968,7 +982,7 @@
         userName: "관리자",
         role: "ADMIN",
         password: "1111",
-        menus: ["USER_MANAGE", "COMMON_CODE"]
+        menus: ["USER_MANAGE", "MENU_MANAGE", "USER_MENU_MANAGE", "COMMON_CODE"]
       },
       user: {
         userName: "사용자",
@@ -1000,6 +1014,8 @@
         title: "시스템관리",
         items: [
           { code: "USER_MANAGE", name: "사용자관리", icon: "사", desc: "관리자가 사용자를 등록하고 메뉴 권한을 관리합니다." },
+          { code: "MENU_MANAGE", name: "메뉴관리", icon: "메", desc: "시스템 전체 메뉴를 등록하고 관리합니다." },
+          { code: "USER_MENU_MANAGE", name: "사용자별 메뉴관리", icon: "권", desc: "사용자별로 접근 가능한 메뉴를 관리합니다." },
           { code: "COMMON_CODE", name: "공통코드관리", icon: "코", desc: "권한, 상태, 구분값 등 시스템 코드를 관리합니다." }
         ]
       },
@@ -1037,6 +1053,7 @@
 
     let currentAccount = null;
     let activeMenu = "DASHBOARD";
+    let selectedPermissionLoginId = "user";
     let userRows = [
       {
         id: 1,
@@ -1149,7 +1166,7 @@
       menuNav.innerHTML = "";
 
       menuGroups.forEach((group) => {
-        const permittedItems = group.items.filter((item) => currentAccount.menus.includes(item.code));
+        const permittedItems = group.items.filter((item) => currentAccount.menus.includes(item.code) && item.useYn !== "N");
         if (!permittedItems.length) return;
         const isOpen = openMenuGroups.has(group.title);
 
@@ -1224,6 +1241,12 @@
       } else if (activeMenu === "USER_MANAGE") {
         contentArea.innerHTML = userManageTemplate();
         bindUserGrid();
+      } else if (activeMenu === "MENU_MANAGE") {
+        contentArea.innerHTML = menuManageTemplate();
+        bindMenuManageGrid();
+      } else if (activeMenu === "USER_MENU_MANAGE") {
+        contentArea.innerHTML = userMenuManageTemplate();
+        bindUserMenuManage();
       } else if (activeMenu === "COMMON_CODE") {
         contentArea.innerHTML = commonCodeTemplate();
       } else {
@@ -1307,6 +1330,161 @@
           </div>
         </section>
       `;
+    }
+
+    function menuManageTemplate() {
+      const rows = getManageableMenus();
+      return `
+        <section class="content-panel">
+          <div class="panel-head">
+            <h3>메뉴관리</h3>
+            <div class="grid-actions">
+              <button class="secondary-button" id="saveMenusButton" type="button">저장</button>
+            </div>
+          </div>
+          <p class="grid-message" id="menuGridMessage">시스템 전체 메뉴명을 그리드에서 바로 관리합니다.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>상위메뉴</th>
+                  <th>메뉴코드</th>
+                  <th>메뉴명</th>
+                  <th>설명</th>
+                  <th>사용</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(menuManageRowTemplate).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function menuManageRowTemplate(row) {
+      return `
+        <tr data-menu-code="${row.code}">
+          <td>${escapeHtml(row.groupTitle)}</td>
+          <td><span class="badge">${escapeHtml(row.code)}</span></td>
+          <td><input class="grid-input" data-field="name" value="${escapeHtml(row.name)}" /></td>
+          <td><input class="grid-input" data-field="desc" value="${escapeHtml(row.desc)}" /></td>
+          <td><input class="permission-check" data-field="useYn" type="checkbox" ${row.useYn === "N" ? "" : "checked"} /></td>
+        </tr>
+      `;
+    }
+
+    function bindMenuManageGrid() {
+      const saveButton = document.querySelector("#saveMenusButton");
+      const message = document.querySelector("#menuGridMessage");
+
+      saveButton.addEventListener("click", () => {
+        contentArea.querySelectorAll("[data-menu-code]").forEach((rowEl) => {
+          const code = rowEl.dataset.menuCode;
+          const item = findMenuItem(code);
+          if (!item) return;
+          item.name = rowEl.querySelector("[data-field='name']").value.trim() || item.name;
+          item.desc = rowEl.querySelector("[data-field='desc']").value.trim();
+          item.useYn = rowEl.querySelector("[data-field='useYn']").checked ? "Y" : "N";
+        });
+        renderMenu();
+        message.textContent = "메뉴 정보를 저장했습니다. 실제 DB 연결 시 menus 테이블에 저장합니다.";
+      });
+    }
+
+    function userMenuManageTemplate() {
+      const users = userRows.filter((row) => row.loginId);
+      const target = accounts[selectedPermissionLoginId] ? selectedPermissionLoginId : users[0]?.loginId;
+      selectedPermissionLoginId = target || "user";
+      const targetAccount = accounts[selectedPermissionLoginId] || { menus: [] };
+      const rows = getManageableMenus().filter((row) => row.useYn !== "N");
+
+      return `
+        <section class="content-panel">
+          <div class="panel-head">
+            <h3>사용자별 메뉴관리</h3>
+            <div class="grid-actions">
+              <button class="secondary-button" id="saveUserMenusButton" type="button">저장</button>
+            </div>
+          </div>
+          <div class="permission-toolbar">
+            <div>
+              <label for="permissionUserSelect">사용자</label>
+              <select id="permissionUserSelect">
+                ${users.map((row) => `<option value="${escapeHtml(row.loginId)}" ${row.loginId === selectedPermissionLoginId ? "selected" : ""}>${escapeHtml(row.loginId)} / ${escapeHtml(row.userName)}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+          <p class="grid-message" id="userMenuMessage">선택한 사용자에게 허용할 메뉴를 체크하고 저장하세요.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>허용</th>
+                  <th>상위메뉴</th>
+                  <th>메뉴명</th>
+                  <th>메뉴코드</th>
+                  <th>설명</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((row) => userMenuPermissionRowTemplate(row, targetAccount.menus.includes(row.code))).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    }
+
+    function userMenuPermissionRowTemplate(row, checked) {
+      return `
+        <tr data-permission-menu-code="${row.code}">
+          <td><input class="permission-check" type="checkbox" ${checked ? "checked" : ""} /></td>
+          <td>${escapeHtml(row.groupTitle)}</td>
+          <td>${escapeHtml(row.name)}</td>
+          <td><span class="badge">${escapeHtml(row.code)}</span></td>
+          <td>${escapeHtml(row.desc)}</td>
+        </tr>
+      `;
+    }
+
+    function bindUserMenuManage() {
+      const userSelect = document.querySelector("#permissionUserSelect");
+      const saveButton = document.querySelector("#saveUserMenusButton");
+      const message = document.querySelector("#userMenuMessage");
+
+      userSelect.addEventListener("change", () => {
+        selectedPermissionLoginId = userSelect.value;
+        renderContent();
+      });
+
+      saveButton.addEventListener("click", () => {
+        const checkedMenus = Array.from(contentArea.querySelectorAll("[data-permission-menu-code]"))
+          .filter((rowEl) => rowEl.querySelector(".permission-check").checked)
+          .map((rowEl) => rowEl.dataset.permissionMenuCode);
+
+        if (accounts[selectedPermissionLoginId]) {
+          accounts[selectedPermissionLoginId].menus = checkedMenus;
+        }
+
+        if (currentAccount === accounts[selectedPermissionLoginId]) {
+          renderApp();
+          return;
+        }
+
+        message.textContent = "사용자별 메뉴권한을 저장했습니다. 실제 DB 연결 시 user_menu_permissions 테이블에 저장합니다.";
+      });
+    }
+
+    function getManageableMenus() {
+      return menuGroups
+        .flatMap((group) => group.items.map((item) => ({ ...item, groupTitle: group.title })))
+        .filter((item) => item.code !== "DASHBOARD");
+    }
+
+    function findMenuItem(code) {
+      return menuGroups.flatMap((group) => group.items).find((item) => item.code === code);
     }
 
     function settingsPasswordTemplate() {
@@ -1428,6 +1606,21 @@
 
       saveButton.addEventListener("click", () => {
         syncUserRowsFromGrid();
+        userRows.forEach((row) => {
+          if (!row.loginId) return;
+          if (!accounts[row.loginId]) {
+            accounts[row.loginId] = {
+              userName: row.userName || row.loginId,
+              role: row.role,
+              password: row.tempPassword || "1111",
+              menus: []
+            };
+          } else {
+            accounts[row.loginId].userName = row.userName || row.loginId;
+            accounts[row.loginId].role = row.role;
+            if (row.tempPassword) accounts[row.loginId].password = row.tempPassword;
+          }
+        });
         message.textContent = "변경 내용을 저장했습니다. 실제 DB 저장은 API 연결 단계에서 반영합니다.";
       });
 
@@ -1439,6 +1632,11 @@
         }
 
         const hasAdministrator = userRows.some((row) => selectedUserRowIds.has(row.id) && row.loginId === "administrator");
+        userRows
+          .filter((row) => row.loginId !== "administrator" && selectedUserRowIds.has(row.id))
+          .forEach((row) => {
+            delete accounts[row.loginId];
+          });
         userRows = userRows.filter((row) => row.loginId === "administrator" || !selectedUserRowIds.has(row.id));
         selectedUserRowIds.clear();
         renderContent();
