@@ -889,8 +889,8 @@
               <span>여러 사업장의 데이터를 나누어 입력하고 함께 조회합니다.</span>
             </div>
             <div class="value-item">
-              <strong>권한별 메뉴</strong>
-              <span>관리자와 사용자는 필요한 메뉴만 보고 작업합니다.</span>
+              <strong>사용자 ID별 메뉴</strong>
+              <span>관리자가 사용자 ID마다 필요한 메뉴를 따로 설정합니다.</span>
             </div>
             <div class="value-item">
               <strong>통합 현황</strong>
@@ -950,7 +950,7 @@
         <strong id="currentUserName">관리자</strong>
         <span id="currentUserRole">ADMIN</span>
       </div>
-      <nav id="menuNav" aria-label="권한별 메뉴"></nav>
+      <nav id="menuNav" aria-label="사용자 ID별 메뉴"></nav>
     </aside>
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
@@ -1015,7 +1015,7 @@
         items: [
           { code: "USER_MANAGE", name: "사용자관리", icon: "사", desc: "관리자가 사용자를 등록하고 메뉴 권한을 관리합니다." },
           { code: "MENU_MANAGE", name: "메뉴관리", icon: "메", desc: "시스템 전체 메뉴를 등록하고 관리합니다." },
-          { code: "USER_MENU_MANAGE", name: "사용자별 메뉴관리", icon: "권", desc: "사용자별로 접근 가능한 메뉴를 관리합니다." },
+          { code: "USER_MENU_MANAGE", name: "사용자 ID별 메뉴관리", icon: "권", desc: "사용자 ID마다 접근 가능한 메뉴를 관리합니다." },
           { code: "COMMON_CODE", name: "공통코드관리", icon: "코", desc: "권한, 상태, 구분값 등 시스템 코드를 관리합니다." }
         ]
       },
@@ -1279,7 +1279,7 @@
         </div>
         <section class="content-panel">
           <div class="panel-head">
-            <h3>권한별 업무 안내</h3>
+            <h3>사용자 메뉴 안내</h3>
             <button class="secondary-button" type="button">새로고침</button>
           </div>
           <p style="margin:0;color:var(--muted);line-height:1.7">${roleText}</p>
@@ -1403,20 +1403,20 @@
       return `
         <section class="content-panel">
           <div class="panel-head">
-            <h3>사용자별 메뉴관리</h3>
+            <h3>사용자 ID별 메뉴관리</h3>
             <div class="grid-actions">
               <button class="secondary-button" id="saveUserMenusButton" type="button">저장</button>
             </div>
           </div>
           <div class="permission-toolbar">
             <div>
-              <label for="permissionUserSelect">사용자</label>
+              <label for="permissionUserSelect">사용자 ID</label>
               <select id="permissionUserSelect">
-                ${users.map((row) => `<option value="${escapeHtml(row.loginId)}" ${row.loginId === selectedPermissionLoginId ? "selected" : ""}>${escapeHtml(row.loginId)} / ${escapeHtml(row.userName)}</option>`).join("")}
+                ${users.map((row) => `<option value="${escapeHtml(row.loginId)}" ${row.loginId === selectedPermissionLoginId ? "selected" : ""}>${escapeHtml(row.loginId)} / ${escapeHtml(row.userName)} / ${escapeHtml(row.status)}</option>`).join("")}
               </select>
             </div>
           </div>
-          <p class="grid-message" id="userMenuMessage">선택한 사용자에게 허용할 메뉴를 체크하고 저장하세요.</p>
+          <p class="grid-message" id="userMenuMessage">선택한 사용자 ID에 허용할 메뉴를 체크하고 저장하세요. 권한코드가 아니라 사용자 계정별 설정입니다.</p>
           <div class="table-wrap">
             <table>
               <thead>
@@ -1473,7 +1473,7 @@
           return;
         }
 
-        message.textContent = "사용자별 메뉴권한을 저장했습니다. 실제 DB 연결 시 user_menu_permissions 테이블에 저장합니다.";
+          message.textContent = "사용자 ID별 메뉴권한을 저장했습니다. 실제 DB 연결 시 user_menu_permissions.user_id 기준으로 저장합니다.";
       });
     }
 
