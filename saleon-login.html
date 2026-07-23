@@ -1313,10 +1313,7 @@
       { group: "USER_ROLE", code: "ADMIN", name: "관리자", useYn: "Y" },
       { group: "USER_ROLE", code: "USER", name: "사용자", useYn: "Y" },
       { group: "MONEY_IO_TYPE", code: "RECEIVE", name: "수금", useYn: "Y" },
-      { group: "MONEY_IO_TYPE", code: "PAY", name: "지급", useYn: "Y" },
-      { group: "PLACE_TYPE", code: "SALES", name: "매출처", useYn: "Y" },
-      { group: "PLACE_TYPE", code: "PURCHASE", name: "매입처", useYn: "Y" },
-      { group: "PLACE_TYPE", code: "ETC", name: "기타", useYn: "Y" }
+      { group: "MONEY_IO_TYPE", code: "PAY", name: "지급", useYn: "Y" }
     ];
 
     function getCommonCodes(group) {
@@ -2138,7 +2135,6 @@
               <thead>
                 <tr>
                   <th>사업장코드</th>
-                  <th>구분</th>
                   <th>사업자번호</th>
                   <th>업종</th>
                   <th>업태</th>
@@ -2153,7 +2149,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${rows.length ? rows.map(placeRowTemplate).join("") : `<tr><td colspan="13">등록된 사업장이 없습니다.</td></tr>`}
+                ${rows.length ? rows.map(placeRowTemplate).join("") : `<tr><td colspan="12">등록된 사업장이 없습니다.</td></tr>`}
               </tbody>
             </table>
           </div>
@@ -2166,7 +2162,6 @@
       return `
         <tr>
           <td>${escapeHtml(row.placeCode)}</td>
-          <td>${escapeHtml(getCommonCodeName("PLACE_TYPE", row.placeType || "ETC"))}</td>
           <td>${escapeHtml(row.businessNumber)}</td>
           <td>${escapeHtml(row.businessType)}</td>
           <td>${escapeHtml(row.businessItem)}</td>
@@ -2196,12 +2191,6 @@
                 <div>
                   <label>사업장코드</label>
                   <div class="place-code-preview" id="nextPlaceCode">${nextPlaceCode}</div>
-                </div>
-                <div>
-                  <label for="placeType">구분</label>
-                  <select id="placeType" name="placeType">
-                    ${getCommonCodes("PLACE_TYPE").map((row) => `<option value="${row.code}">${row.name}</option>`).join("")}
-                  </select>
                 </div>
                 ${placeInputTemplate("businessNumber", "사업자번호", false, "text", "000-00-00000")}
                 ${placeInputTemplate("businessType", "업종")}
@@ -2281,7 +2270,6 @@
           id: Math.max(...businessPlaceRows.map((row) => row.id), 0) + 1,
           ownerLoginId: currentLoginId,
           placeCode,
-          placeType: String(formData.get("placeType") || "ETC"),
           businessNumber: String(formData.get("businessNumber") || "").trim(),
           businessType: String(formData.get("businessType") || "").trim(),
           businessItem: String(formData.get("businessItem") || "").trim(),
