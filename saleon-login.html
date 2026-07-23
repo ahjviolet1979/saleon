@@ -77,34 +77,36 @@
     .brand-panel::before {
       content: "";
       position: absolute;
-      inset: auto 42px 42px auto;
-      width: 310px;
-      height: 210px;
-      border: 1px solid rgba(31, 107, 79, 0.16);
+      right: 42px;
+      bottom: 42px;
+      width: 230px;
+      height: 150px;
+      border: 1px solid rgba(31, 107, 79, 0.12);
       background:
         linear-gradient(#ffffff, #ffffff) padding-box,
         repeating-linear-gradient(
           180deg,
-          rgba(31, 107, 79, 0.14) 0 1px,
-          transparent 1px 34px
+          rgba(31, 107, 79, 0.1) 0 1px,
+          transparent 1px 30px
         );
       border-radius: var(--radius);
-      transform: rotate(-2deg);
+      opacity: 0.45;
     }
 
     .brand-panel::after {
       content: "";
       position: absolute;
-      right: 86px;
-      bottom: 92px;
-      width: 190px;
-      height: 92px;
-      border-left: 3px solid var(--primary);
-      border-bottom: 3px solid var(--primary);
-      background:
-        linear-gradient(135deg, transparent 49%, rgba(41, 92, 122, 0.16) 50%, transparent 51%),
-        linear-gradient(45deg, transparent 52%, rgba(31, 107, 79, 0.22) 53%, transparent 54%);
-      opacity: 0.9;
+      right: 76px;
+      bottom: 82px;
+      width: 132px;
+      height: 64px;
+      border-left: 3px solid rgba(31, 107, 79, 0.52);
+      border-bottom: 3px solid rgba(31, 107, 79, 0.52);
+      opacity: 0.5;
+    }
+
+    .brand-content {
+      margin-bottom: 34px;
     }
 
     .brand-content,
@@ -151,6 +153,8 @@
     }
 
     .value-list {
+      position: relative;
+      z-index: 2;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
