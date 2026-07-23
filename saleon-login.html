@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Saleon - 로그인</title>
+  <style>
+    :root {
+      --bg: #f5f7f4;
+      --surface: #ffffff;
+      --surface-soft: #eef3ec;
+      --text: #17211b;
+      --muted: #66736b;
+      --line: #dbe3dc;
+      --primary: #1f6b4f;
+      --primary-dark: #184f3c;
+      --accent: #295c7a;
+      --warning: #8b5e20;
+      --shadow: 0 24px 70px rgba(28, 47, 36, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(31, 107, 79, 0.08), transparent 42%),
+        linear-gradient(315deg, rgba(41, 92, 122, 0.08), transparent 36%),
+        var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 40px 24px;
+    }
+
+    .login-shell {
+      width: min(1100px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .brand-panel,
+    .login-panel {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .brand-panel {
+      position: relative;
+      overflow: hidden;
+      min-height: 560px;
+      padding: 46px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .brand-panel::before {
+      content: "";
+      position: absolute;
+      inset: auto 42px 42px auto;
+      width: 310px;
+      height: 210px;
+      border: 1px solid rgba(31, 107, 79, 0.16);
+      background:
+        linear-gradient(#ffffff, #ffffff) padding-box,
+        repeating-linear-gradient(
+          180deg,
+          rgba(31, 107, 79, 0.14) 0 1px,
+          transparent 1px 34px
+        );
+      border-radius: var(--radius);
+      transform: rotate(-2deg);
+    }
+
+    .brand-panel::after {
+      content: "";
+      position: absolute;
+      right: 86px;
+      bottom: 92px;
+      width: 190px;
+      height: 92px;
+      border-left: 3px solid var(--primary);
+      border-bottom: 3px solid var(--primary);
+      background:
+        linear-gradient(135deg, transparent 49%, rgba(41, 92, 122, 0.16) 50%, transparent 51%),
+        linear-gradient(45deg, transparent 52%, rgba(31, 107, 79, 0.22) 53%, transparent 54%);
+      opacity: 0.9;
+    }
+
+    .brand-content,
+    .brand-foot {
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 54px;
+      font-weight: 800;
+      font-size: 22px;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 580px;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 1.12;
+      font-weight: 800;
+    }
+
+    .lead {
+      margin: 22px 0 0;
+      max-width: 560px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .value-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 40px;
+      max-width: 650px;
+    }
+
+    .value-item {
+      min-height: 96px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(245, 247, 244, 0.74);
+      padding: 16px;
+    }
+
+    .value-item strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 15px;
+    }
+
+    .value-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .brand-foot {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status-line {
+      width: 46px;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .login-panel {
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .login-title {
+      margin-bottom: 30px;
+    }
+
+    .login-title h2 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      line-height: 1.25;
+    }
+
+    .login-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #2d3931;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--text);
+      padding: 0 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(31, 107, 79, 0.12);
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 66px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface-soft);
+      color: #34433a;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 4px 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .remember {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .remember input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .help-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .login-button {
+      width: 100%;
+      height: 50px;
+      border: 0;
+      border-radius: var(--radius);
+      background: var(--primary);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 800;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .login-button:hover {
+      background: var(--primary-dark);
+    }
+
+    .login-button:active {
+      transform: translateY(1px);
+    }
+
+    .notice {
+      margin-top: 22px;
+      padding: 14px;
+      border: 1px solid #ead9bd;
+      border-radius: var(--radius);
+      background: #fff8ec;
+      color: var(--warning);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .error {
+      display: none;
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border: 1px solid #e8beb7;
+      border-radius: var(--radius);
+      background: #fff1ef;
+      color: #9a3122;
+      font-size: 14px;
+    }
+
+    .error.is-visible {
+      display: block;
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        padding: 24px 16px;
+        place-items: start center;
+      }
+
+      .login-shell {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .brand-panel {
+        order: 2;
+        min-height: auto;
+        padding: 28px;
+      }
+
+      .brand-panel::before,
+      .brand-panel::after {
+        display: none;
+      }
+
+      .logo {
+        margin-bottom: 24px;
+      }
+
+      .value-list {
+        grid-template-columns: 1fr;
+        margin-top: 24px;
+      }
+
+      .brand-foot {
+        margin-top: 26px;
+      }
+
+      .login-panel {
+        order: 1;
+        padding: 28px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .page {
+        padding: 0;
+        background: var(--surface);
+      }
+
+      .login-shell {
+        width: 100%;
+        gap: 0;
+      }
+
+      .brand-panel,
+      .login-panel {
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .brand-panel {
+        background: var(--bg);
+      }
+
+      .login-panel {
+        min-height: 100vh;
+        justify-content: flex-start;
+        padding: 30px 20px;
+      }
+
+      .login-title h2 {
+        font-size: 24px;
+      }
+
+      h1 {
+        font-size: 30px;
+      }
+
+      .lead {
+        font-size: 16px;
+      }
+
+      .options {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="login-shell" aria-label="세일온 로그인">
+      <aside class="brand-panel">
+        <div class="brand-content">
+          <div class="logo" aria-label="Saleon">
+            <div class="logo-mark">S</div>
+            <span>Saleon</span>
+          </div>
+
+          <h1>개인사업자를 위한 딱 필요한 매입매출관리</h1>
+          <p class="lead">
+            거래처, 제품, 매입, 매출, 수금과 지급까지.
+            복잡한 기능은 덜고 매일 필요한 기록만 빠르게 정리하세요.
+          </p>
+
+          <div class="value-list" aria-label="세일온 주요 기능">
+            <div class="value-item">
+              <strong>사업장별 관리</strong>
+              <span>여러 사업장의 데이터를 나누어 입력하고 함께 조회합니다.</span>
+            </div>
+            <div class="value-item">
+              <strong>간단한 입력</strong>
+              <span>거래처와 제품을 기반으로 매입매출을 빠르게 등록합니다.</span>
+            </div>
+            <div class="value-item">
+              <strong>바로 보는 현황</strong>
+              <span>수금, 지급, 매입매출 흐름을 필요한 조건으로 확인합니다.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="brand-foot">
+          <span class="status-line" aria-hidden="true"></span>
+          <span>Saleon keeps business numbers simple.</span>
+        </div>
+      </aside>
+
+      <section class="login-panel">
+        <div class="login-title">
+          <h2>세일온 로그인</h2>
+          <p>관리자와 사용자는 권한에 따라 다른 메뉴로 이동합니다.</p>
+        </div>
+
+        <p class="error" id="loginError">아이디와 비밀번호를 모두 입력해주세요.</p>
+
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="loginId">아이디</label>
+            <input id="loginId" name="loginId" type="text" autocomplete="username" placeholder="아이디를 입력하세요" />
+          </div>
+
+          <div class="field">
+            <label for="password">비밀번호</label>
+            <div class="input-wrap">
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요" />
+              <button class="password-toggle" id="passwordToggle" type="button" aria-controls="password" aria-pressed="false">
+                보기
+              </button>
+            </div>
+          </div>
+
+          <div class="options">
+            <label class="remember">
+              <input type="checkbox" name="rememberId" />
+              <span>아이디 저장</span>
+            </label>
+            <a class="help-link" href="#">계정 문의</a>
+          </div>
+
+          <button class="login-button" type="submit">로그인</button>
+        </form>
+
+        <div class="notice">
+          최초 관리자 계정은 <strong>administrator</strong>로 준비하고, 실제 운영 전 비밀번호 변경 절차를 연결합니다.
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector("#loginForm");
+    const loginId = document.querySelector("#loginId");
+    const password = document.querySelector("#password");
+    const error = document.querySelector("#loginError");
+    const toggle = document.querySelector("#passwordToggle");
+
+    toggle.addEventListener("click", () => {
+      const nextType = password.type === "password" ? "text" : "password";
+      password.type = nextType;
+      toggle.textContent = nextType === "password" ? "보기" : "숨김";
+      toggle.setAttribute("aria-pressed", String(nextType === "text"));
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const isValid = loginId.value.trim() && password.value.trim();
+      error.classList.toggle("is-visible", !isValid);
+
+      if (isValid) {
+        alert("로그인 API 연결 전 화면 확인용입니다.");
+      }
+    });
+  </script>
+</body>
+</html>
