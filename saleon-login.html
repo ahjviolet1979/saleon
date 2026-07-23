@@ -817,6 +817,91 @@
       border-radius: var(--radius);
     }
 
+    .dense-table table {
+      min-width: 1120px;
+    }
+
+    .dense-table th,
+    .dense-table td {
+      height: 30px;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+
+    .place-modal-backdrop {
+      position: fixed;
+      z-index: 60;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(20, 33, 26, 0.38);
+    }
+
+    .place-modal {
+      width: min(760px, 100%);
+      max-height: min(86vh, 680px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .place-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      background: #f7faf8;
+    }
+
+    .place-modal-head h4 {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .place-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 10px;
+      padding: 10px;
+    }
+
+    .place-form label {
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .place-form input {
+      height: 30px;
+      padding: 0 8px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    .place-form select {
+      height: 30px;
+      padding: 0 8px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    .place-field-wide {
+      grid-column: 1 / -1;
+    }
+
+    .place-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      padding: 8px 10px 10px;
+      border-top: 1px solid var(--line);
+    }
+
     table {
       width: 100%;
       min-width: 720px;
@@ -925,6 +1010,10 @@
       }
 
       .permission-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .place-form {
         grid-template-columns: 1fr;
       }
     }
@@ -1199,6 +1288,8 @@
         lastLogin: "-"
       }
     ];
+    let businessPlaceRows = [];
+    let placeModalOpen = false;
     let selectedUserRowIds = new Set();
     let openMenuGroups = new Set(["홈", "시스템관리", "사업장", "기초관리", "거래관리", "현황/출력"]);
     let currentLoginId = "";
@@ -1296,6 +1387,7 @@
         if (storedData.accounts) accounts = storedData.accounts;
         if (Array.isArray(storedData.menuGroups)) menuGroups = storedData.menuGroups;
         if (Array.isArray(storedData.userRows)) userRows = storedData.userRows;
+        if (Array.isArray(storedData.businessPlaceRows)) businessPlaceRows = storedData.businessPlaceRows;
       } catch (error) {
         console.warn("SaleOn 저장 데이터를 읽지 못했습니다.", error);
       }
@@ -1306,6 +1398,7 @@
         accounts,
         menuGroups,
         userRows,
+        businessPlaceRows,
         savedAt: new Date().toISOString()
       }));
     }
@@ -1410,6 +1503,9 @@
         bindUserMenuManage();
       } else if (activeMenu === "COMMON_CODE") {
         contentArea.innerHTML = commonCodeTemplate();
+      } else if (activeMenu === "PLACE_MANAGE") {
+        contentArea.innerHTML = placeManageTemplate();
+        bindPlaceManage();
       } else {
         contentArea.innerHTML = workTemplate(menu.name);
       }
@@ -1953,6 +2049,164 @@
           </div>
         </section>
       `;
+    }
+
+    function placeManageTemplate() {
+      const rows = businessPlaceRows.filter((row) => row.ownerLoginId === currentLoginId);
+      return `
+        <section class="content-panel">
+          <div class="panel-head">
+            <h3>사업장관리</h3>
+            <div class="grid-actions">
+              <button class="icon-only" id="openPlaceModalButton" type="button" title="사업장 추가" aria-label="사업장 추가">+</button>
+            </div>
+          </div>
+          <p class="grid-message" id="placeGridMessage">사업장을 추가하면 현재 로그인 사용자에게 저장됩니다.</p>
+          <div class="table-wrap dense-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>사업장코드</th>
+                  <th>사업자번호</th>
+                  <th>업종</th>
+                  <th>업태</th>
+                  <th>주소</th>
+                  <th>연락처</th>
+                  <th>대표이름</th>
+                  <th>대표이메일</th>
+                  <th>담당자이름</th>
+                  <th>담당자이메일</th>
+                  <th>FAX</th>
+                  <th>사용여부</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.length ? rows.map(placeRowTemplate).join("") : `<tr><td colspan="12">등록된 사업장이 없습니다.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        ${placeModalOpen ? placeModalTemplate() : ""}
+      `;
+    }
+
+    function placeRowTemplate(row) {
+      return `
+        <tr>
+          <td>${escapeHtml(row.placeCode)}</td>
+          <td>${escapeHtml(row.businessNumber)}</td>
+          <td>${escapeHtml(row.businessType)}</td>
+          <td>${escapeHtml(row.businessItem)}</td>
+          <td>${escapeHtml(row.address)}</td>
+          <td>${escapeHtml(row.phone)}</td>
+          <td>${escapeHtml(row.ceoName)}</td>
+          <td>${escapeHtml(row.ceoEmail)}</td>
+          <td>${escapeHtml(row.managerName)}</td>
+          <td>${escapeHtml(row.managerEmail)}</td>
+          <td>${escapeHtml(row.fax)}</td>
+          <td><span class="badge">${escapeHtml(row.useYn)}</span></td>
+        </tr>
+      `;
+    }
+
+    function placeModalTemplate() {
+      return `
+        <div class="place-modal-backdrop" role="presentation">
+          <section class="place-modal" role="dialog" aria-modal="true" aria-label="사업장 추가">
+            <div class="place-modal-head">
+              <h4>사업장 추가</h4>
+              <button class="icon-only" id="closePlaceModalButton" type="button" title="닫기" aria-label="닫기">×</button>
+            </div>
+            <form id="placeForm" novalidate>
+              <div class="place-form">
+                ${placeInputTemplate("placeCode", "사업장코드")}
+                ${placeInputTemplate("businessNumber", "사업자번호")}
+                ${placeInputTemplate("businessType", "업종")}
+                ${placeInputTemplate("businessItem", "업태")}
+                ${placeInputTemplate("address", "주소", true)}
+                ${placeInputTemplate("phone", "연락처")}
+                ${placeInputTemplate("ceoName", "대표이름")}
+                ${placeInputTemplate("ceoEmail", "대표이메일", false, "email")}
+                ${placeInputTemplate("managerName", "담당자이름")}
+                ${placeInputTemplate("managerEmail", "담당자이메일", false, "email")}
+                ${placeInputTemplate("fax", "FAX")}
+                <div>
+                  <label for="placeUseYn">사용여부</label>
+                  <select id="placeUseYn" name="useYn">
+                    <option value="Y" selected>Y</option>
+                    <option value="N">N</option>
+                  </select>
+                </div>
+              </div>
+              <div class="place-modal-actions">
+                <button class="icon-only" type="submit" title="저장" aria-label="저장">✓</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      `;
+    }
+
+    function placeInputTemplate(name, label, wide = false, type = "text") {
+      return `
+        <div class="${wide ? "place-field-wide" : ""}">
+          <label for="place_${name}">${label}</label>
+          <input id="place_${name}" name="${name}" type="${type}" />
+        </div>
+      `;
+    }
+
+    function bindPlaceManage() {
+      const openButton = document.querySelector("#openPlaceModalButton");
+      const closeButton = document.querySelector("#closePlaceModalButton");
+      const form = document.querySelector("#placeForm");
+      const message = document.querySelector("#placeGridMessage");
+
+      openButton?.addEventListener("click", () => {
+        placeModalOpen = true;
+        renderContent();
+      });
+
+      closeButton?.addEventListener("click", () => {
+        placeModalOpen = false;
+        renderContent();
+      });
+
+      form?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const placeCode = String(formData.get("placeCode") || "").trim();
+
+        if (!placeCode) {
+          message.textContent = "사업장코드를 입력해주세요.";
+          message.style.color = "var(--danger)";
+          return;
+        }
+
+        businessPlaceRows.push({
+          id: Math.max(...businessPlaceRows.map((row) => row.id), 0) + 1,
+          ownerLoginId: currentLoginId,
+          placeCode,
+          businessNumber: String(formData.get("businessNumber") || "").trim(),
+          businessType: String(formData.get("businessType") || "").trim(),
+          businessItem: String(formData.get("businessItem") || "").trim(),
+          address: String(formData.get("address") || "").trim(),
+          phone: String(formData.get("phone") || "").trim(),
+          ceoName: String(formData.get("ceoName") || "").trim(),
+          ceoEmail: String(formData.get("ceoEmail") || "").trim(),
+          managerName: String(formData.get("managerName") || "").trim(),
+          managerEmail: String(formData.get("managerEmail") || "").trim(),
+          fax: String(formData.get("fax") || "").trim(),
+          useYn: String(formData.get("useYn") || "Y")
+        });
+
+        saveAppData();
+        placeModalOpen = false;
+        renderContent();
+        const nextMessage = document.querySelector("#placeGridMessage");
+        nextMessage.textContent = "사업장을 저장했습니다.";
+        nextMessage.style.color = "var(--primary-dark)";
+      });
     }
 
     function workTemplate(title) {
