@@ -879,14 +879,41 @@
       background: #ffffff;
     }
 
-    .partner-section-title {
+    .partner-section-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       margin: 0;
       padding: 7px 9px;
+      border: 0;
       border-bottom: 1px solid var(--line);
       background: #f7faf8;
       color: var(--primary-dark);
       font-size: 12px;
       font-weight: 900;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .partner-section-toggle::after {
+      content: "⌄";
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .partner-section.is-collapsed .partner-section-toggle {
+      border-bottom: 0;
+    }
+
+    .partner-section.is-collapsed .partner-section-toggle::after {
+      content: "›";
+    }
+
+    .partner-section.is-collapsed .partner-section-grid {
+      display: none;
     }
 
     .partner-section-grid {
@@ -1498,6 +1525,7 @@
     let partnerRows = [];
     let placeModalOpen = false;
     let selectedPartnerRowId = null;
+    let openPartnerSections = new Set(["required", "business", "manager", "contact"]);
     let selectedBusinessPlaceCode = "";
     let selectedUserRowIds = new Set();
     let openMenuGroups = new Set(["홈", "시스템관리", "사업장", "기초관리", "거래관리", "현황/출력"]);
@@ -2585,9 +2613,7 @@
       return `
         <form class="partner-form" id="partnerForm" novalidate>
           <input type="hidden" name="partnerId" value="${escapeHtml(row.id || "")}" />
-          <section class="partner-section">
-            <h5 class="partner-section-title">필수</h5>
-            <div class="partner-section-grid">
+          ${partnerSectionTemplate("required", "필수", `
               <div>
                 <label for="partner_placeCode">사업장</label>
                 <select id="partner_placeCode" name="placeCode">
@@ -2609,21 +2635,34 @@
                 </label>
               </div>
               ${partnerInputTemplate("partnerName", "거래처명", row.partnerName, true)}
-            </div>
-          </section>
+          `)}
 
-          <section class="partner-section">
-            <h5 class="partner-section-title">연결</h5>
-            <div class="partner-section-grid">
-              ${partnerInputTemplate("partnerCategory", "거래처분류", row.partnerCategory)}
-              ${partnerInputTemplate("staffName", "담당사원", row.staffName)}
-              ${partnerInputTemplate("paymentBook", "주 결제장부", row.paymentBook, true)}
-            </div>
-          </section>
+          ${partnerSectionTemplate("business", "사업자", `
+              ${partnerInputTemplate("businessNumber", "등록번호", row.businessNumber, false, "text", "000-00-00000")}
+              ${partnerInputTemplate("branchNumber", "종사업장번호", row.branchNumber)}
+              ${partnerInputTemplate("companyName", "상호", row.companyName)}
+              ${partnerInputTemplate("ceoName", "대표자명", row.ceoName)}
+              ${partnerInputTemplate("businessAddress", "사업장소재지", row.businessAddress, true)}
+              ${partnerInputTemplate("businessType", "업태", row.businessType)}
+              ${partnerInputTemplate("businessItem", "종목", row.businessItem)}
+          `)}
 
-          <section class="partner-section">
-            <h5 class="partner-section-title">부가</h5>
-            <div class="partner-section-grid">
+          ${partnerSectionTemplate("manager", "담당자", `
+              ${partnerInputTemplate("manager1", "담당1", row.manager1)}
+              ${partnerInputTemplate("mobile1", "휴대폰1", row.mobile1, false, "text", "010-0000-0000")}
+              ${partnerEmailTemplate("email1", "이메일1", row.email1)}
+              ${partnerInputTemplate("manager2", "담당2", row.manager2)}
+              ${partnerInputTemplate("mobile2", "휴대폰2", row.mobile2, false, "text", "010-0000-0000")}
+              ${partnerEmailTemplate("email2", "이메일2", row.email2)}
+          `)}
+
+          ${partnerSectionTemplate("contact", "연락처", `
+              ${partnerInputTemplate("phone1", "전화1", row.phone1, false, "text", "02-0000-0000")}
+              ${partnerInputTemplate("phone2", "전화2", row.phone2, false, "text", "02-0000-0000")}
+              ${partnerInputTemplate("fax", "팩스", row.fax, false, "text", "02-0000-0000")}
+          `)}
+
+          ${partnerSectionTemplate("extra", "부가", `
               ${partnerInputTemplate("initialBalance", "기초잔액", row.initialBalance, false, "text", "0")}
               ${partnerInputTemplate("currentBalance", "현잔액", row.currentBalance, false, "text", "0")}
               <p class="partner-amount-note">빨간 금액은 받고, 지급할 금액은 마이너스로 입력하세요.</p>
@@ -2636,43 +2675,26 @@
                 <label for="partner_memo">메모</label>
                 <textarea id="partner_memo" name="memo">${escapeHtml(row.memo)}</textarea>
               </div>
-            </div>
-          </section>
+          `)}
 
-          <section class="partner-section">
-            <h5 class="partner-section-title">사업자</h5>
-            <div class="partner-section-grid">
-              ${partnerInputTemplate("businessNumber", "등록번호", row.businessNumber, false, "text", "000-00-00000")}
-              ${partnerInputTemplate("branchNumber", "종사업장번호", row.branchNumber)}
-              ${partnerInputTemplate("companyName", "상호", row.companyName)}
-              ${partnerInputTemplate("ceoName", "대표자명", row.ceoName)}
-              ${partnerInputTemplate("businessAddress", "사업장소재지", row.businessAddress, true)}
-              ${partnerInputTemplate("businessType", "업태", row.businessType)}
-              ${partnerInputTemplate("businessItem", "종목", row.businessItem)}
-            </div>
-          </section>
-
-          <section class="partner-section">
-            <h5 class="partner-section-title">담당자</h5>
-            <div class="partner-section-grid">
-              ${partnerInputTemplate("manager1", "담당1", row.manager1)}
-              ${partnerInputTemplate("mobile1", "휴대폰1", row.mobile1, false, "text", "010-0000-0000")}
-              ${partnerEmailTemplate("email1", "이메일1", row.email1)}
-              ${partnerInputTemplate("manager2", "담당2", row.manager2)}
-              ${partnerInputTemplate("mobile2", "휴대폰2", row.mobile2, false, "text", "010-0000-0000")}
-              ${partnerEmailTemplate("email2", "이메일2", row.email2)}
-            </div>
-          </section>
-
-          <section class="partner-section">
-            <h5 class="partner-section-title">연락처</h5>
-            <div class="partner-section-grid">
-              ${partnerInputTemplate("phone1", "전화1", row.phone1, false, "text", "02-0000-0000")}
-              ${partnerInputTemplate("phone2", "전화2", row.phone2, false, "text", "02-0000-0000")}
-              ${partnerInputTemplate("fax", "팩스", row.fax, false, "text", "02-0000-0000")}
-            </div>
-          </section>
+          ${partnerSectionTemplate("link", "연결", `
+              ${partnerInputTemplate("partnerCategory", "거래처분류", row.partnerCategory)}
+              ${partnerInputTemplate("staffName", "담당사원", row.staffName)}
+              ${partnerInputTemplate("paymentBook", "주 결제장부", row.paymentBook, true)}
+          `)}
         </form>
+      `;
+    }
+
+    function partnerSectionTemplate(sectionKey, title, body) {
+      const isOpen = openPartnerSections.has(sectionKey);
+      return `
+        <section class="partner-section ${isOpen ? "" : "is-collapsed"}" data-partner-section="${sectionKey}">
+          <button class="partner-section-toggle" type="button" data-partner-section-toggle="${sectionKey}" aria-expanded="${isOpen ? "true" : "false"}">${title}</button>
+          <div class="partner-section-grid">
+            ${body}
+          </div>
+        </section>
       `;
     }
 
@@ -2701,7 +2723,7 @@
     function partnerEmailTemplate(name, label, value = "") {
       const parts = splitEmail(value);
       return `
-        <div class="partner-field-wide">
+        <div>
           <label>${label}</label>
           <div class="email-pair" data-email-name="${name}">
             <input name="${name}Local" type="text" value="${escapeHtml(parts.local)}" aria-label="${label} 아이디" />
@@ -2737,6 +2759,21 @@
         row.addEventListener("click", () => {
           selectedPartnerRowId = Number(row.dataset.partnerId);
           renderContent();
+        });
+      });
+
+      contentArea.querySelectorAll("[data-partner-section-toggle]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const sectionKey = button.dataset.partnerSectionToggle;
+          const section = button.closest("[data-partner-section]");
+          const nextOpen = !openPartnerSections.has(sectionKey);
+          if (nextOpen) {
+            openPartnerSections.add(sectionKey);
+          } else {
+            openPartnerSections.delete(sectionKey);
+          }
+          section?.classList.toggle("is-collapsed", !nextOpen);
+          button.setAttribute("aria-expanded", String(nextOpen));
         });
       });
 
